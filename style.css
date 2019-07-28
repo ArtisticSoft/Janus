@@ -48,7 +48,7 @@ width:100%;
 
 /* bootstrap have .panel class so i name my panel 'grid-panel' */
 .grid-panel {
-    border: 1px solid Violet; 
+/*    border: 1px solid Violet; */
     background: White;
     padding:0.5em;
 	/* override some bootstrap settings*/

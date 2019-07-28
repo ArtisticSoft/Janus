@@ -20,7 +20,7 @@ body {
     background: green;
     display: grid;
     grid-template-columns: 20em auto 20em;
-    grid-template-rows: 2.3em auto 2em;
+    grid-template-rows: 2.3em auto 2.1em;
     grid-template-areas: 
         "header header header"
         "left   middle right"

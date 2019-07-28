@@ -29,18 +29,9 @@ else
 
 //debug!
 
-//ReferenceError: adapter is not defined
-//server = 'https://janus.conf.meetecho.com:8089';
-//server = 'https://janus.conf.meetecho.com/janus:8089';
-//server = 'https://janus.conf.meetecho.com:8089/janus';
-//server = 'http://janus.conf.meetecho.com:8088/janus';
-//server = 'https://janus.conf.meetecho.com/janus';
-
 //can't connect
 //server = 'ws://janus.conf.meetecho.com:8188';
 
-//Cross-Origin Request Blocked:
-//where are ways to circumvent this. it finally works!
 server = 'https://janus.conf.meetecho.com/janus';
 
 //-----------------------------------------------------------------------------
@@ -49,11 +40,10 @@ var streaming;
 var opaqueId = 'streamingtest-'+Janus.randomString(12);
 
 //-----------------------------------------------------------------------------
-// for local file window.location.protocol = 'file:'
 
 const ProtocolToPortNum = {
-'http:': '8088',
-'https:': '8089'
+  'http:': '8088',
+  'https:': '8089'
 };
 
 let p = window.location.protocol;
@@ -172,71 +162,6 @@ window.addEventListener('load', (event) => {
 });
 
 //-----------------------------------------------------------------------------
-//error due to plugin missed in the native demo installation
-//Ooops: 460 No such plugin 'janus.plugin.gstreamer'
-/*
-//native code
-						janus.attach(
-							{
->>>>>>>>								plugin: "janus.plugin.streaming",
-								opaqueId: opaqueId,
-								success: function(pluginHandle) {
-									$('#details').remove();
-									streaming = pluginHandle;
-									Janus.log("Plugin attached! (" + streaming.getPlugin() + ", id=" + streaming.getId() + ")");
-									// Setup streaming session
-									$('#update-streams').click(updateStreamsList);
-									updateStreamsList();
-									$('#start').removeAttr('disabled').html("Stop")
-										.click(function() {
-											$(this).attr('disabled', true);
-											clearInterval(bitrateTimer);
-											janus.destroy();
-											$('#streamslist').attr('disabled', true);
-											$('#watch').attr('disabled', true).unbind('click');
-											$('#start').attr('disabled', true).html("Bye").unbind('click');
-										});
-								},
-//-  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  - 
-//my code
-                janus.attach(
-                    {
-                        plugin: 'janus.plugin.gstreamer',
-                        opaqueId: opaqueId,
-                        success: function(pluginHandle) {
-                            streaming = pluginHandle;
-                            Janus.log('Plugin attached! (' + streaming.getPlugin() + ', id=' + streaming.getId() + ')');
-							
-							//[UI] interaction
-							WebRTCState = 'attached';
-                            PlayStopButton.removeAttribute('disabled');
-                        },
-*/
-//-----------------------------------------------------------------------------
-//optimizations
-/*
-											//PlayStopButton.setAttribute('disabled', false);
-											PlayStopButton.disabled = false;
-*/
-//-----------------------------------------------------------------------------
-//Janus <-> UI interactions 
-/*
-                janus.attach(
-                        success: function(pluginHandle) {
-							$('#watch').attr('disabled', true).unbind('click');
-							$('#watch').removeAttr('disabled').click(startStream);
-
-                        onmessage: function(msg, jsep) {
-                                // Offer from the plugin, let's answer
-                                streaming.createAnswer(
-                                        success: function(jsep) {
-                                            $('#watch').html('Stop').removeAttr('disabled').click(stopStream);
-
-                        onremotestream: function(stream) {
-                            Janus.attachMediaStream($('#remotevideo').get(0), stream);
-*/
-//-----------------------------------------------------------------------------
-
 /*
 function startStream() {
     var mrl = $('#source-edit').val();

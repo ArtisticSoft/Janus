@@ -1,6 +1,8 @@
 //=============================================================================
+//UI related
 
 var PlayStopButton;
+var NoVideoBanner;
 
 function myLog(msg) {
     console.log(msg);
@@ -16,51 +18,93 @@ function myAlert(msg) {
 //myAlert('--- init...');
 
 //-----------------------------------------------------------------------------
-//Janus server URL autodetect
-//assumed the demo page reside on the same server where Janus server installed
+//Janus server URL 
+/*
+Janus Server: camproxy.ru (должны работать http/https/ws/wss протоколы)
+тестовый rtsp: rtsp://camproxy.ru:8554/bars
 
-var serverHost = window.location.hostname;
+demo page:
+https://rsatom.github.io/janus-gstreamer-plugin/
+*/
+
+var UseWebSockets = false;
+
+var serverHost = 'camproxy.ru';
+
+//assumed the demo page reside on the same server where Janus server installed
+//serverHost = window.location.hostname;
+
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+var ProtocolMap = {
+  //UseWebSockets = false
+  false: {
+    'http:':  {scheme: 'http', port: '8088', path: '/janus'},
+    'https:': {scheme: 'https', port: '8089', path: '/janus'}
+  },
+  
+  //UseWebSockets = true
+  true: {
+    'http:':  {scheme: 'ws', port: '8189', path: ''},
+    'https:': {scheme: 'wss', port: '8989', path: ''}
+  }
+};
 
 var server;
-if(window.location.protocol === 'http:')
-    server = 'http://' + serverHost + ':8088/janus';
-else
-    server = 'https://' + serverHost + ':8089/janus';
 
-//debug!
+//real-life
+//var p = ProtocolMap[UseWebSockets][window.location.protocol];
 
-//can't connect
-//server = 'ws://janus.conf.meetecho.com:8188';
+//---debug
+var UseWebSockets = true;
+var p = ProtocolMap[UseWebSockets]['https:'];
+//var p = ProtocolMap[UseWebSockets]['http:'];
+//Works
+//var UseWebSockets = false;
+//var p = ProtocolMap[UseWebSockets]['https:'];//Works
+//var p = ProtocolMap[UseWebSockets]['http:'];//Works
 
-server = 'https://janus.conf.meetecho.com/janus';
+if (p) {
+  server = p.scheme + '://' + serverHost + ':' + p.port + p.path;
+}
 
-//-----------------------------------------------------------------------------
+//override - for very basic testing only
+//server = 'https://janus.conf.meetecho.com/janus';
+
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//debug
+
+//myLog('UseWebSockets = ['+UseWebSockets +'] serverHost = ['+serverHost +']');
+//myLog('window.location.protocol= ['+window.location.protocol+']');
+
+myLog('server= ['+server+']');
+
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//global vars 
+
 var janus;
 var streaming;
 var opaqueId = 'streamingtest-'+Janus.randomString(12);
 
 //-----------------------------------------------------------------------------
 
-const ProtocolToPortNum = {
-  'http:': '8088',
-  'https:': '8089'
-};
-
-let p = window.location.protocol;
-var my_server = p + '//' + serverHost + ':' + ProtocolToPortNum[p] + '/janus';
-
-//myLog('window.location.protocol= ['+window.location.protocol+']');
-myLog('server= ['+server+'] my_server = ['+my_server+']');
-
-//-----------------------------------------------------------------------------
-
 window.addEventListener('load', (event) => {
 //$(document).ready(function() {
 
-    // Use a button to start the demo
-    PlayStopButton = document.getElementById('PlayStopButton');
+    //return;//debug!
+    
+    if (!server) {
+      myAlert("can't determine Janus server URL");
+      return;
+    }
+    
+    //PlayStop button
+    PlayStopButton = document.getElementById('play-stop-button');
     PlayStopButton.addEventListener('click', clickPlayStopButton, false);
-	PlayStopButton.disabled = true;
+    PlayStopButton.disabled = true;
+    PlayStopButton.StreamState = '';//forge a property
+    
+    NoVideoBanner = document.getElementById('novideo');
     
     // Initialize the library (all console debuggers enabled)
     Janus.init({debug: 'all', callback: function() {
@@ -78,20 +122,19 @@ window.addEventListener('load', (event) => {
                 // Attach to streaming plugin
                 janus.attach(
                     {
-						//Works on the native demo server
-                        plugin: 'janus.plugin.streaming',
+                        //not works on the native demo server
+                        plugin: 'janus.plugin.gstreamer',
 
-						//not works on the native demo server
-      //                  plugin: 'janus.plugin.gstreamer',
-
+                        //Works on the native demo server
+                        //plugin: 'janus.plugin.streaming',
+                        
                         opaqueId: opaqueId,
                         success: function(pluginHandle) {
                             streaming = pluginHandle;
                             Janus.log('Plugin attached! (' + streaming.getPlugin() + ', id=' + streaming.getId() + ')');
 							
-							//[UI] interaction
-							WebRTCState = 'attached';
-                            PlayStopButton.disabled = false;
+                            //[UI] interaction
+                            StreamStateChangeHandler('attached');
                         },
                         error: function(error) {
                             Janus.error('  -- Error attaching plugin... ', error);
@@ -127,10 +170,8 @@ window.addEventListener('load', (event) => {
                                             var body = { 'request': 'start' };
                                             streaming.send({'message': body, 'jsep': jsep});
 											
-											//[UI] interaction
-											//PlayStopButton.innerHTML = 'Stop';
-											WebRTCState = 'streaming';
-											PlayStopButton.disabled = false;
+                                            //[UI] interaction
+                                            StreamStateChangeHandler('streaming');
                                         },
                                         error: function(error) {
                                             Janus.error('WebRTC error:', error);
@@ -142,7 +183,7 @@ window.addEventListener('load', (event) => {
                         onremotestream: function(stream) {
                             Janus.debug(' ::: Got a remote stream :::');
                             Janus.debug(stream);
-							//[UI] interaction
+                            //[UI] interaction
                             Janus.attachMediaStream(document.getElementById('remotevideo'), stream);
                         },
                         oncleanup: function() {
@@ -162,37 +203,54 @@ window.addEventListener('load', (event) => {
 });
 
 //-----------------------------------------------------------------------------
-/*
-function startStream() {
-    var mrl = $('#source-edit').val();
-    if(mrl === undefined || mrl === null || !mrl) {
-        myAlert('Enter source MRL');
-        return;
-    }
-    $('#watch').attr('disabled', true).unbind('click');
-    var body = { 'request': 'watch', mrl: mrl };
-    streaming.send({'message': body});
+
+function StreamStateChangeHandler(state) {
+  PlayStopButton.StreamState = state;
+  switch (state) {
+    case 'attached':
+      PlayStopButton.disabled = false;
+      PlayStopButton.innerHTML = 'Play';
+      break;
+
+    case 'streaming':
+      PlayStopButton.disabled = false;
+      PlayStopButton.innerHTML = 'Stop';
+      break;
+  }
 }
 
-function stopStream() {
-    $('#watch').attr('disabled', true).unbind('click');
-    var body = { 'request': 'stop' };
-    streaming.send({'message': body});
-    streaming.hangup();
-    $('#watch').html('Watch').removeAttr('disabled').click(startStream);
-}
-*/
-//-----------------------------------------------------------------------------
 
-function clickPlayStopButton() {
-    var mrl = document.getElementById('source-edit').value;
-    if(mrl && mrl.length) {
-        myAlert('MRL=['+mrl+']');
-        var body = { 'request': 'watch', mrl: mrl };
-        //streaming.send({'message': body});
-    } else {
-        myAlert('Enter source MRL');
-    }
+function clickPlayStopButton(e) {
+  //myAlert('e.target.id =['+e.target.id +']');
+  //myAlert('e.target.StreamState =['+e.target.StreamState +']');
+  
+  var body;
+  
+  switch (e.target.StreamState) {
+    case 'attached':
+      var mrl = document.getElementById('source-edit').value;
+      if(mrl && mrl.length) {
+          //myAlert('MRL=['+mrl+']');
+          
+          //begin Play video. button will be enabled on the actual play begin message
+          e.target.disabled = true;
+          body = { 'request': 'watch', mrl: mrl };
+          streaming.send({'message': body});
+          NoVideoBanner.style.display = 'none';
+      } else {
+          myAlert('Enter source MRL');
+      }
+      break;
+
+    case 'streaming':
+      e.target.disabled = true;
+      body = { 'request': 'stop' };
+      streaming.send({'message': body});
+      streaming.hangup();
+      StreamStateChangeHandler('attached');
+      NoVideoBanner.style.display = 'block';
+      break;
+  }
 }
 
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -46,21 +46,27 @@
     <!-- ============================================================ -->
     <div class="grid-panel content" style="grid-area: middle">
 
-        <label for="input">Enter the URL (address) of the website you would like to visit:</label>
+        <label for="input">Enter the URL (address) of the video stream you would like to watch:</label>
         
         <div class="input-group">
-            <input type="text" name="u" id="source-edit" size="80" class="form-control" placeholder="Enter the website you wish to visit here..."
-                value="rtsps://ipcambox.webchimera.org:8100/dlink931">
+            <input id="source-edit" name="u" size="80" class="form-control" type="text" 
+                placeholder="Enter the Stream you wish to watch here..."
+                value="rtsp://camproxy.ru:8554/bars">
             <div class="input-group-addon">
-                <button id="PlayStopButton" class="btn btn-primary btn-large" >Play / Stop</button>
+                <button id="play-stop-button" class="btn btn-primary btn-large" style="width: 7em">-</button>
             </div>
     	</div>
         
-        <div>
-            <br>
-        </div>
+        <p></p><!-- clumsy way to insert an empty space -->
 
-        <video id="remotevideo" width=320 height=240 autoplay/>
+				<div id="stream">
+          <div id="novideo" class="video-overlay" style="display: block;">
+            <p>click Play</p>
+          </div>
+          <video id="remotevideo" width="320" height="240" autoplay poster="wait_banner.png">
+            <p>Your browser doesn't support HTML5 video.</p>
+          </video>
+        </div>
 
     </div>
 
